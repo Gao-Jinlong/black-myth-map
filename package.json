@@ -3,22 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "rsbuild build",
-    "check": "biome check --write",
-    "dev": "rsbuild dev --open",
-    "format": "biome format --write",
-    "preview": "rsbuild preview"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "dev:web": "pnpm -F=@black-myth-map/web dev",
+    "dev:server": "pnpm -F=@black-myth-map/server start:dev"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.3",
-    "@rsbuild/core": "^1.1.8",
-    "@rsbuild/plugin-react": "^1.0.7",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.2"
+    "@biomejs/biome": "^1.9.3"
   }
 }
