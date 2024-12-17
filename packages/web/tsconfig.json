@@ -20,7 +20,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": [
-    "packages/srckages/src"
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }

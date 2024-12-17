@@ -1,10 +1,11 @@
-import L from 'leaflet';
+import L from "leaflet";
 import {
   type Dispatch,
   type SetStateAction,
   createContext,
   useState,
-} from 'react';
+} from "react";
+import React from "react";
 
 const mapContext = createContext<{
   map: L.Map | null;
@@ -20,7 +21,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [map, setMap] = useState<L.Map | null>(null);
 
   const CRS = L.extend(L.CRS.Simple, {
-    transformation: new L.Transformation(1, 0, 0, 1),
+    transformation: new L.Transformation(1, 0, -1, 0),
   });
 
   return (
