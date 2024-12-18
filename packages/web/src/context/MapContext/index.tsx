@@ -21,7 +21,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [map, setMap] = useState<L.Map | null>(null);
 
   const CRS = L.extend(L.CRS.Simple, {
-    transformation: new L.Transformation(1, 0, -1, 0),
+    transformation: new L.Transformation(1, 0, 1, 0),
   });
 
   return (

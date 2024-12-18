@@ -3,12 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "sliceTile": "tsx scripts/sliceTile/index.ts",
     "dev:web": "pnpm -F=@black-myth-map/web dev",
     "dev:server": "pnpm -F=@black-myth-map/server start:dev",
     "server": "pnpm -F=@black-myth-map/server",
     "web": "pnpm -F=@black-myth-map/web"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.3"
+    "@biomejs/biome": "^1.9.3",
+    "tsx": "^4.19.2",
+    "sharp": "^0.33.5",
+    "typescript": "catalog:"
   }
 }
