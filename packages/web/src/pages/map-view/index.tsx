@@ -4,6 +4,9 @@ import { useContext, useEffect, useRef } from "react";
 import mapContext from "../../context/MapContext";
 import { useSearchParams } from "react-router-dom";
 import MapSelect from "./components/map-select";
+import "./map-view.css";
+import LayerControl from "./components/layer-control";
+import MapLayers from "./components/map-layers";
 
 L.Marker.prototype.options.icon = L.icon({
   iconUrl: "assets/icon_transport.png",
@@ -11,9 +14,8 @@ L.Marker.prototype.options.icon = L.icon({
 });
 
 const MapView = () => {
-  const { setMap, tile, CRS } = useContext(mapContext);
+  const { map, setMap, tile, CRS } = useContext(mapContext);
   const container = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const [params, setParams] = useSearchParams();
 
@@ -24,7 +26,7 @@ const MapView = () => {
         [0, 0],
         [256, 256],
       ],
-      zoom: 0,
+      zoom: 3,
       maxZoom: 6,
       preferCanvas: true,
       crs: CRS,
@@ -46,15 +48,13 @@ const MapView = () => {
       setParams(param);
     });
 
-    mapRef.current = map;
-
     return () => {
       map.remove();
     };
   }, [CRS, setMap]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!map) return;
     const t = L.tileLayer(tile.url, {
       minZoom: 0,
       maxNativeZoom: 3,
@@ -64,17 +64,18 @@ const MapView = () => {
         [0, 0],
         [256, 256],
       ],
-    }).addTo(mapRef.current);
+    }).addTo(map);
     tileLayerRef.current = t;
     return () => {
-      t.removeFrom(mapRef.current!);
+      t.removeFrom(map);
     };
-  }, [tile]);
+  }, [map, tile]);
 
   return (
-    <div className="h-screen w-screen">
+    <div className="h-screen w-screen bg-slate-950">
       <MapSelect />
-
+      <LayerControl />
+      <MapLayers />
       <div ref={container} className="w-full h-full" />
     </div>
   );
