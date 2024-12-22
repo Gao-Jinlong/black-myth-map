@@ -1,12 +1,11 @@
-import { useContext, useState } from "react";
-import { mapLayers } from "../config/layers";
+import { useContext, useEffect, useState } from "react";
 import mapContext from "../../../context/MapContext";
 
 const LayerControl = () => {
+  const { tile } = useContext(mapContext);
   const [visibleLayers, setVisibleLayers] = useState<Set<string>>(
-    new Set(mapLayers.map((layer) => layer.id)),
+    new Set(tile.layers?.map((layer) => layer.id) || []),
   );
-  const { map } = useContext(mapContext);
 
   const toggleLayer = (layerId: string) => {
     const newVisibleLayers = new Set(visibleLayers);
@@ -24,21 +23,31 @@ const LayerControl = () => {
     window.dispatchEvent(event);
   };
 
+  useEffect(() => {
+    if (!tile.layers?.length) {
+      toggleLayer("");
+    } else {
+      toggleLayer(tile.layers[0].id);
+    }
+  }, [tile]);
+
   return (
-    <div className="absolute top-4 right-4 bg-white p-2 rounded shadow-md z-[500]">
-      <h3 className="text-lg font-bold mb-2">图层控制</h3>
-      {mapLayers.map((layer) => (
-        <div key={layer.id} className="flex items-center gap-2 mb-1">
-          <input
-            type="checkbox"
-            id={layer.id}
-            checked={visibleLayers.has(layer.id)}
-            onChange={() => toggleLayer(layer.id)}
-          />
-          <label htmlFor={layer.id}>{layer.name}</label>
-        </div>
-      ))}
-    </div>
+    tile.layers?.length && (
+      <div className="absolute top-4 right-4 bg-white p-2 rounded shadow-md z-[500]">
+        <h3 className="text-lg font-bold mb-2">图层控制</h3>
+        {tile.layers.map((layer) => (
+          <div key={layer.id} className="flex items-center gap-2 mb-1">
+            <input
+              type="checkbox"
+              id={layer.id}
+              checked={visibleLayers.has(layer.id)}
+              onChange={() => toggleLayer(layer.id)}
+            />
+            <label htmlFor={layer.id}>{layer.name}</label>
+          </div>
+        ))}
+      </div>
+    )
   );
 };
 
