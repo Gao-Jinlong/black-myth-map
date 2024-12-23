@@ -7,27 +7,21 @@ const LayerControl = () => {
     new Set(tile.layers?.map((layer) => layer.id) || []),
   );
 
-  const toggleLayer = (layerId: string) => {
-    const newVisibleLayers = new Set(visibleLayers);
-    if (newVisibleLayers.has(layerId)) {
-      newVisibleLayers.delete(layerId);
-    } else {
-      newVisibleLayers.add(layerId);
-    }
-    setVisibleLayers(newVisibleLayers);
+  const toggleLayer = (layerIds: string[]) => {
+    setVisibleLayers(new Set(layerIds));
 
     // 触发自定义事件，通知 MapLayers 组件更新图层
     const event = new CustomEvent("layerVisibilityChange", {
-      detail: { visibleLayers: Array.from(newVisibleLayers) },
+      detail: { visibleLayers: layerIds },
     });
     window.dispatchEvent(event);
   };
 
   useEffect(() => {
     if (!tile.layers?.length) {
-      toggleLayer("");
+      toggleLayer([]);
     } else {
-      toggleLayer(tile.layers[0].id);
+      toggleLayer(tile.layers.map((layer) => layer.id));
     }
   }, [tile]);
 
