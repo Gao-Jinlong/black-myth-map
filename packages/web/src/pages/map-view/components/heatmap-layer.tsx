@@ -1,7 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import mapContext from "../../../context/MapContext";
-import { Kriging } from "../../../utils/kriging";
 
 // 定义散点数据类型
 interface ScatterPoint {
@@ -12,10 +11,10 @@ interface ScatterPoint {
 
 // 配置常量
 const HEATMAP_CONFIG = {
-  resolution: 100, // 插值网格分辨率
   variogram: "gaussian", // 变差函数类型
   sigma2: 1, // 变差函数参数
   alpha: 50, // 变差函数范围参数
+  scale: 4, // 降采样比例
   colorStops: [
     { value: 0, color: [0, 0, 255] }, // 蓝色
     { value: 0.5, color: [0, 255, 0] }, // 绿色
@@ -76,11 +75,52 @@ const interpolateColor = (value: number): [number, number, number] => {
   ];
 };
 
+// 双线性插值函数
+const bilinearInterpolate = (
+  values: Float32Array,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+): number => {
+  const x1 = Math.floor(x);
+  const x2 = Math.min(x1 + 1, width - 1);
+  const y1 = Math.floor(y);
+  const y2 = Math.min(y1 + 1, height - 1);
+
+  const fx = x - x1;
+  const fy = y - y1;
+
+  const v11 = values[y1 * width + x1];
+  const v21 = values[y1 * width + x2];
+  const v12 = values[y2 * width + x1];
+  const v22 = values[y2 * width + x2];
+
+  const value =
+    v11 * (1 - fx) * (1 - fy) +
+    v21 * fx * (1 - fy) +
+    v12 * (1 - fx) * fy +
+    v22 * fx * fy;
+
+  return value;
+};
+
 const HeatmapLayer = () => {
   const { map } = useContext(mapContext);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasOverlayRef = useRef<L.Layer | null>(null);
+  const workerRef = useRef<Worker | null>(null);
   const [scatterData, setScatterData] = useState<ScatterPoint[]>([]);
+
+  // 初始化 Web Worker
+  useEffect(() => {
+    workerRef.current = new Worker(
+      new URL("../../../utils/interpolation.worker.ts", import.meta.url),
+    );
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
 
   useEffect(() => {
     // 初始化 mock 数据
@@ -112,9 +152,8 @@ const HeatmapLayer = () => {
       },
 
       drawLayer: function () {
-        const bounds = map.getBounds();
         const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+        if (!ctx || !workerRef.current) return;
 
         // 清除之前的绘制内容
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -130,51 +169,57 @@ const HeatmapLayer = () => {
 
         // 创建图像数据
         const imageData = ctx.createImageData(canvas.width, canvas.height);
-        const { resolution, variogram, sigma2, alpha, opacity } =
-          HEATMAP_CONFIG;
+        const { scale, variogram, sigma2, alpha, opacity } = HEATMAP_CONFIG;
 
-        // 计算网格步长
-        const stepX = canvas.width / resolution;
-        const stepY = canvas.height / resolution;
+        // 使用 Web Worker 进行插值计算
+        workerRef.current.onmessage = (
+          e: MessageEvent<{
+            values: Float32Array;
+            width: number;
+            height: number;
+          }>,
+        ) => {
+          const { values, width: scaledWidth, height: scaledHeight } = e.data;
 
-        // 对每个网格点进行插值
-        for (let i = 0; i < resolution; i++) {
-          for (let j = 0; j < resolution; j++) {
-            const pixelX = i * stepX;
-            const pixelY = j * stepY;
-            const latlng = map.containerPointToLatLng([pixelX, pixelY]);
+          // 使用双线性插值进行放大
+          for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+              const scaledX = (x * scaledWidth) / canvas.width;
+              const scaledY = (y * scaledHeight) / canvas.height;
 
-            // 使用 kriging 进行插值
-            const value = Kriging.interpolate(
-              points,
-              latlng.lng,
-              latlng.lat,
-              variogram,
-              sigma2,
-              alpha,
-            );
+              const value = bilinearInterpolate(
+                values,
+                scaledWidth,
+                scaledHeight,
+                scaledX,
+                scaledY,
+              );
 
-            // 获取插值点的颜色
-            const [r, g, b] = interpolateColor(Math.max(0, Math.min(1, value)));
+              const [r, g, b] = interpolateColor(
+                Math.max(0, Math.min(1, value)),
+              );
+              const idx = (y * canvas.width + x) * 4;
 
-            // 填充像素
-            for (let px = 0; px < stepX && pixelX + px < canvas.width; px++) {
-              for (
-                let py = 0;
-                py < stepY && pixelY + py < canvas.height;
-                py++
-              ) {
-                const idx = ((pixelY + py) * canvas.width + (pixelX + px)) * 4;
-                imageData.data[idx] = r;
-                imageData.data[idx + 1] = g;
-                imageData.data[idx + 2] = b;
-                imageData.data[idx + 3] = 255 * opacity;
-              }
+              imageData.data[idx] = r;
+              imageData.data[idx + 1] = g;
+              imageData.data[idx + 2] = b;
+              imageData.data[idx + 3] = 255 * opacity;
             }
           }
-        }
 
-        ctx.putImageData(imageData, 0, 0);
+          ctx.putImageData(imageData, 0, 0);
+        };
+
+        // 发送数据到 Worker 进行处理
+        workerRef.current.postMessage({
+          points,
+          width: canvas.width,
+          height: canvas.height,
+          scale,
+          variogram,
+          sigma2,
+          alpha,
+        });
       },
     });
 
