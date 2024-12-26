@@ -7,6 +7,7 @@ import MapSelect from "./components/map-select";
 import "./map-view.css";
 import LayerControl from "./components/layer-control";
 import MapLayers from "./components/map-layers";
+import HeatmapLayer from "./components/heatmap-layer";
 
 L.Marker.prototype.options.icon = L.icon({
   iconUrl: "assets/icon_transport.png",
@@ -76,6 +77,7 @@ const MapView = () => {
       <MapSelect />
       <LayerControl />
       <MapLayers />
+      <HeatmapLayer />
       <div ref={container} className="w-full h-full" />
     </div>
   );
