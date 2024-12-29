@@ -23,9 +23,9 @@ const HEATMAP_CONFIG = {
   power: 2, // 距离权重指数
   smoothing: 0.0001, // 平滑因子
   // 渲染配置
-  scale: 4, // 缩放因子，值越大计算越快但精度越低
+  scale: 1, // 缩放因子，值越大计算越快但精度越低
   opacity: 0.8, // 透明度
-  blur: 0.85, // 模糊程度
+  // blur: 0.85, // 模糊程度
 };
 
 // 生成 mock 散点数据的函数
@@ -33,9 +33,9 @@ const generateMockScatterData = (count: number = 30): ScatterPoint[] => {
   const points: ScatterPoint[] = [];
   const mapBounds = {
     minLat: 0,
-    maxLat: 256,
+    maxLat: 64,
     minLng: 0,
-    maxLng: 256,
+    maxLng: 64,
   };
 
   for (let i = 0; i < count; i++) {
@@ -128,7 +128,7 @@ const HeatmapLayer = () => {
 
   useEffect(() => {
     // 初始化 mock 数据
-    setScatterData(generateMockScatterData());
+    setScatterData(generateMockScatterData(2000));
   }, []);
 
   useEffect(() => {
@@ -148,13 +148,11 @@ const HeatmapLayer = () => {
         canvas.height = size.y;
         map.getPanes().overlayPane.appendChild(canvas);
       },
-
       onRemove: function (map: L.Map) {
         if (canvas.parentNode) {
           canvas.parentNode.removeChild(canvas);
         }
       },
-
       drawLayer: function () {
         const ctx = canvas.getContext("2d");
         if (!ctx || !workerRef.current) return;
@@ -241,11 +239,9 @@ const HeatmapLayer = () => {
 
           // 应用模糊效果
           ctx.putImageData(imageData, 0, 0);
-          if (HEATMAP_CONFIG.blur > 0) {
-            ctx.filter = `blur(${HEATMAP_CONFIG.blur}px)`;
-            ctx.drawImage(canvas, 0, 0);
-            ctx.filter = "none";
-          }
+          // ctx.filter = `blur(${HEATMAP_CONFIG.blur}px)`;
+          ctx.drawImage(canvas, 0, 0);
+          ctx.filter = "none";
 
           // 更新或创建图层
           if (canvasOverlayRef.current) {

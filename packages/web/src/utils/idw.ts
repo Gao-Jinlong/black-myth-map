@@ -19,7 +19,7 @@ export class IDW {
     y: number,
     points: Point[],
     power: number = 2,
-    smoothing: number = 0.0001
+    smoothing: number = 0.0001,
   ): number {
     let weightSum = 0;
     let valueSum = 0;
@@ -63,16 +63,16 @@ export class IDW {
     height: number,
     points: Point[],
     power: number = 2,
-    smoothing: number = 0.0001
+    smoothing: number = 0.0001,
   ): Float32Array {
     const result = new Float32Array(width * height);
-    
+
     for (let j = 0; j < height; j++) {
       for (let i = 0; i < width; i++) {
         // 将网格索引转换为实际坐标
-        const x = (i / width) * 256;
-        const y = (j / height) * 256;
-        
+        const x = (i / width) * 64;
+        const y = (j / height) * 64;
+
         result[j * width + i] = this.predict(x, y, points, power, smoothing);
       }
     }
